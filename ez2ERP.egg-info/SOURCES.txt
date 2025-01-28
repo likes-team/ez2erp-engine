@@ -1,0 +1,8 @@
+README.md
+setup.py
+ez2ERP.egg-info/PKG-INFO
+ez2ERP.egg-info/SOURCES.txt
+ez2ERP.egg-info/dependency_links.txt
+ez2ERP.egg-info/top_level.txt
+ez2erp_engine/__init__.py
+ez2erp_engine/db.py
