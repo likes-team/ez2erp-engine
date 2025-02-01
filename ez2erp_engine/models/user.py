@@ -1,5 +1,4 @@
-from base64 import b64encode
-from Crypto.Cipher import AES
+import bcrypt
 from ez2erp_engine.models import BaseModel
 
 
@@ -12,25 +11,25 @@ class User(BaseModel):
         self.password = kwargs.get('password')
         self.fname = kwargs.get('fname')
         self.lname = kwargs.get('lname')
+        self.password_hash = kwargs.get('password_hash')
 
-    def encrypt_password(self, password, encryption_key):
-        """Encrypt using pycryptodome
+    def encrypt_password(self, password):
+        """Encrypt using bcrypt
         """
         password_bytes = password.encode(encoding="utf-8")
-        cipher  = AES.new(encryption_key, AES.MODE_CFB)
-        ct_bytes = cipher.encrypt(password_bytes)
-        iv = b64encode(cipher.iv).decode('utf-8')
-        ct = b64encode(ct_bytes).decode('utf-8')
-        self.password_iv = iv
-        self.password_ct = ct
+        self.salt = bcrypt.gensalt()
+        self.password_hash = bcrypt.hashpw(password_bytes, self.salt).decode('utf-8') 
 
-    def decrypt_password(self):
-        pass
+    def decrypt_password(self, password):
+        password_bytes = password.encode(encoding="utf-8")
+        password_hash_bytes = self.password_hash.encode(encoding="utf-8")
+        result = bcrypt.checkpw(password_bytes, password_hash_bytes)
+        return result
 
     def save(self):
         return self.__class__.ez2.insert(self.__dict__)
 
-    def to_json(self):
+    def to_dict(self):
         return {
             'id': self.id,
             'email': self.email,

@@ -1,4 +1,4 @@
+bcrypt==4.2.1
 boto3==1.36.5
 ez2ERP @ git+https://github.com/likes-team/ez2erp-engine.git@main
-pycryptodome==3.21.0
 requests==2.32.3

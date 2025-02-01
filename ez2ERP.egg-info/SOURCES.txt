@@ -6,8 +6,6 @@ ez2ERP.egg-info/dependency_links.txt
 ez2ERP.egg-info/top_level.txt
 ez2erp_engine/__init__.py
 ez2erp_engine/db.py
-ez2erp_engine/auth/__init__.py
-ez2erp_engine/auth/login.py
 ez2erp_engine/models/__init__.py
 ez2erp_engine/models/base.py
 ez2erp_engine/models/user.py

@@ -1,4 +1,5 @@
 from uuid import uuid4
+from boto3.dynamodb.conditions import Key
 
 
 class Ez2DBManager:
@@ -11,12 +12,39 @@ class Ez2DBManager:
     @classmethod
     def connect_db(cls, session):
         cls.dynamo_client = session.resource('dynamodb')
-
+    
     def select(self, key):
         # print(key)
         response = self.table.get_item(Key=key)
+
         print(response)
         return response
+
+    def select_dev(self):
+        # TODO
+        pass
+        # resp = client.query(
+        #     TableName='UsersTabe',
+        #     IndexName='MySecondaryIndexName',
+        #     ExpressionAttributeValues={
+        #         ':v1': {
+        #             'S': 'some@email.com',
+        #         },
+        #     },
+        #     KeyConditionExpression='emailField = :v1',
+        #     )
+
+    def select_by_index(self, index_name, key, val):
+        response = self.table.query(
+            IndexName=index_name,
+            KeyConditionExpression=Key(key).eq(val)
+        )
+
+        if len(response['Items']) == 0:
+            return None
+        
+        return self.model_class(**response['Items'][0])
+
 
     def insert(self, item):
         print(item)
