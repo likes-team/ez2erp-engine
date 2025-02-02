@@ -47,8 +47,8 @@ jobs:
         run: |
           mkdir python
           # assuming your requirements file is in 'requirements/prod.txt'
-          pip install -r requirements.txt -t python
-          pip install . -t  python
+          pip install -r requirements.txt --platform manylinux2014_x86_64 --only-binary=:all: -t python
+          pip install . --platform manylinux2014_x86_64 --only-binary=:all: -t  python
           echo building release $release_id
           # zip it up
           zip --quiet -r $release_id python
