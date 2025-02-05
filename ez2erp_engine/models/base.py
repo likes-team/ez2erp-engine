@@ -2,6 +2,8 @@ from uuid import uuid4
 from boto3.dynamodb.conditions import Key
 
 
+_default_limit = 50
+
 class Ez2DBManager:
     dynamo_client = None
 
@@ -12,13 +14,53 @@ class Ez2DBManager:
     @classmethod
     def connect_db(cls, session):
         cls.dynamo_client = session.resource('dynamodb')
-    
-    def select(self, key):
-        # print(key)
-        response = self.table.get_item(Key=key)
 
-        print(response)
-        return response
+    def _query_with_pagination_gsi(
+            self, index_name, limit=_default_limit, 
+            key_condition=None, filter_exp=None,
+            last_evaluated_key=None
+        ):
+        params = {
+            "IndexName": index_name, # Name of the GSI
+            "Limit": limit,
+        }
+
+        if key_condition:
+            params['KeyConditionExpression'] = key_condition
+        
+        if filter_exp:
+            params['FilterExpression'] = filter_exp 
+        
+        if last_evaluated_key:
+            params["ExclusiveStartKey"] = last_evaluated_key
+
+        response = self.table.query(**params)
+        
+        items = response.get("Items", [])
+        last_key = response.get("LastEvaluatedKey", None)
+
+        print("items", items)
+        result = []
+        for item in items:
+            result.append(self.model_class(**item))
+
+        return result, last_key
+
+    def select(self,
+            index_name,
+            limit=_default_limit,
+            key_condition=None, 
+            filter_exp=None, 
+            last_evaluated_key=None
+        ):
+        return self._query_with_pagination_gsi(
+            index_name=index_name,
+            limit=limit,
+            key_condition=key_condition,
+            filter_exp=filter_exp,
+            last_evaluated_key=last_evaluated_key
+        )
+
 
     def select_dev(self):
         # TODO
@@ -34,16 +76,16 @@ class Ez2DBManager:
         #     KeyConditionExpression='emailField = :v1',
         #     )
 
-    def select_by_index(self, index_name, key, val):
+    def select_by_index(self, index_name, key_condition):
         response = self.table.query(
             IndexName=index_name,
-            KeyConditionExpression=Key(key).eq(val)
+            KeyConditionExpression=key_condition
         )
 
         if len(response['Items']) == 0:
             return None
-        
-        return self.model_class(**response['Items'][0])
+        result = self.model_class(**response['Items'][0]) 
+        return result
 
 
     def insert(self, item):
@@ -54,8 +96,7 @@ class Ez2DBManager:
     def save(self):
         pass
 
-    # def select(self, *field_names):
-    #     pass
+
 
     # def bulk_insert(self, rows: list):
     #     pass
