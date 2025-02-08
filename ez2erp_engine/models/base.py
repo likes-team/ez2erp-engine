@@ -16,21 +16,24 @@ class Ez2DBManager:
         cls.dynamo_client = session.resource('dynamodb')
 
     def _query_with_pagination_gsi(
-            self, index_name, limit=_default_limit, 
-            key_condition=None, filter_exp=None,
-            last_evaluated_key=None
+            self, **kwargs
         ):
-        params = {
-            "IndexName": index_name, # Name of the GSI
-            "Limit": limit,
-        }
+        index_name = kwargs.get('index_name')
+        limit = kwargs.get('limit')
+        key_condition = kwargs.get('key_condition')
+        filter_exp = kwargs.get('filter_exp')
+        last_evaluated_key = kwargs.get('last_evaluated_key')
 
+        params = {
+            'IndexName': index_name,
+            "Limit": limit
+        }
+        # if index_name:
+        #     params[''] = index_name
         if key_condition:
             params['KeyConditionExpression'] = key_condition
-        
         if filter_exp:
             params['FilterExpression'] = filter_exp 
-        
         if last_evaluated_key:
             params["ExclusiveStartKey"] = last_evaluated_key
 
@@ -45,14 +48,42 @@ class Ez2DBManager:
             result.append(self.model_class(**item))
 
         return result, last_key
+    
+    def _scan_with_pagination(self, **kwargs):
+        limit = kwargs.get('limit')
+        params = {
+            "Limit": limit,  # Number of items per scan request
+        }
+
+        last_evaluated_key = kwargs.get('last_evaluated_key')
+        if last_evaluated_key:
+            params["ExclusiveStartKey"] = last_evaluated_key
+
+        response = self.table.scan(**params)
+        
+        items = response.get("Items", [])
+        last_key = response.get("LastEvaluatedKey", None)
+        print("items", items)
+        print("last_key", last_key)
+        result = []
+        for item in items:
+            result.append(self.model_class(**item))
+        return result, last_key
 
     def select(self,
-            index_name,
+            index_name=None,
             limit=_default_limit,
             key_condition=None, 
             filter_exp=None, 
             last_evaluated_key=None
         ):
+
+        if index_name is None:
+            return self._scan_with_pagination(
+                limit=limit,
+                last_evaluated_key=last_evaluated_key
+            )
+
         return self._query_with_pagination_gsi(
             index_name=index_name,
             limit=limit,
@@ -61,6 +92,11 @@ class Ez2DBManager:
             last_evaluated_key=last_evaluated_key
         )
 
+    def get(self, oid):
+        response = self.table.get_item(Key={'id': oid})
+        item = response['Item']
+        result = self.model_class(**item)
+        return result
 
     def select_dev(self):
         # TODO
