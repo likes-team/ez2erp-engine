@@ -14,9 +14,6 @@ class Product(BaseModel):
         self.sku = kwargs.get('sku')
         self.description = kwargs.get('description')
 
-    def save(self):
-        return self.__class__.ez2.insert(self.__dict__)
-
     def to_dict(self):
         return {
             'id': self.id,

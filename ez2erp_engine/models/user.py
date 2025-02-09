@@ -26,9 +26,6 @@ class User(BaseModel):
         result = bcrypt.checkpw(password_bytes, password_hash_bytes)
         return result
 
-    def save(self):
-        return self.__class__.ez2.insert(self.__dict__)
-
     def to_dict(self):
         return {
             'id': self.id,

@@ -122,26 +122,45 @@ class Ez2DBManager:
             return None
         result = self.model_class(**response['Items'][0]) 
         return result
+    
+    def db_save(self, db_id, item):
+        if db_id:
+            return self._update(db_id, item)
+        return self._insert(item)
 
-
-    def insert(self, item):
+    def _insert(self, item):
         print(item)
         response = self.table.put_item(Item=item)
         return response
 
-    def save(self):
-        pass
+    def _update(self, id, item):
+        update_exp, exp_attr_values = self._get_update_params(item)
+        print(update_exp)
+        print(exp_attr_values)
+        response = self.table.update_item(
+            Key={"id": id},
+            UpdateExpression=update_exp,
+            ExpressionAttributeValues=dict(exp_attr_values)
+        )
+        return response
 
+    def _get_update_params(item):
+        update_expression = ["set "]
+        update_values = dict()
 
+        for key, val in item.items():
+            update_expression.append(f" {key} = :{key},")
+            update_values[f":{key}"] = val
 
-    # def bulk_insert(self, rows: list):
-    #     pass
+        return "".join(update_expression)[:-1], update_values
 
-    # def update(self, new_data: dict):
-    #     pass
-
-    # def delete(self):
-    #     pass
+    def delete(self, id):
+        self.table.delete_item(
+            Key={
+                'id': id
+            }
+        )
+        return id
 
 
 class MetaModel(type):
@@ -168,10 +187,21 @@ class BaseModel(metaclass=MetaModel):
 
     def __init__(self, **kwargs):
         if 'id' in kwargs:
-            self.id = kwargs['id'] 
+            self.id = kwargs['id']
         else:
             self.id = str(uuid4())
-        
+
+        self.in_db = kwargs.get('in_db', False)
+
+    def save(self):
+        db_id = None
+
+        # Check if data is already existing in DB then just update it
+        if self.in_db: db_id = self.id
+
+        item = self.__dict__
+        return self.__class__.ez2.db_save(db_id, item)
+
 
     # @property
     # def query_table(self):
