@@ -124,6 +124,9 @@ class Ez2DBManager:
         return result
     
     def db_save(self, db_id, item):
+        if 'in_db' in item:
+            del item['in_db']
+
         if db_id:
             return self._update(db_id, item)
         return self._insert(item)
